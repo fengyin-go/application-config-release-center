@@ -21,9 +21,11 @@ func TestPublishedSnapshotIsolation(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
+	start := make(chan struct{})
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
+		<-start
 		for i := 0; i < 2000; i++ {
 			service.Checksum(published)
 			runtime.Gosched()
@@ -31,10 +33,12 @@ func TestPublishedSnapshotIsolation(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
+		<-start
 		for i := 0; i < 2000; i++ {
 			u.Apply("counter", string(rune(i)))
 			runtime.Gosched()
 		}
 	}()
+	close(start)
 	wg.Wait()
 }
